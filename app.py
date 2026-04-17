@@ -1,65 +1,68 @@
 import streamlit as st
 import numpy as np
+import pandas as pd
 import matplotlib.pyplot as plt
 
-st.set_page_config(page_title="Satellite Signal Dashboard", layout="wide")
+st.set_page_config(page_title="Satellite Dashboard", layout="wide")
 
 # Title
-st.title("🛰️ Satellite Signal Performance Analysis Dashboard")
+st.title("🛰️ Satellite Communication Quality Dashboard")
+st.markdown("Mission-control monitoring of satellite communication quality")
 
-st.markdown("### 🚀 ML-Based Satellite Communication Monitoring System")
-
-# Sidebar
-st.sidebar.header("🔧 Input Parameters")
+# Sidebar Filters
+st.sidebar.header("🔧 Filters")
 
 satellite = st.sidebar.selectbox(
-    "Satellite Type",
-    ["NOAA", "ISS", "CubeSat", "INSAT/GSAT"]
+    "Satellite Name",
+    ["All Satellites", "NOAA", "ISS", "CubeSat", "INSAT/GSAT"]
 )
 
-elevation = st.sidebar.slider("Elevation Angle (°)", 0, 90, 45)
+status = st.sidebar.selectbox(
+    "Status",
+    ["All Statuses", "Strong", "Moderate", "Weak"]
+)
 
-# Base signal logic
-base_signal = {
-    "NOAA": -45,
-    "ISS": -50,
-    "CubeSat": -55,
-    "INSAT/GSAT": -43
-}
+# Simulated dataset (like your Replit app)
+data = pd.DataFrame({
+    "Satellite": ["NOAA", "ISS", "CubeSat", "INSAT/GSAT"],
+    "Signal": [-45, -50, -55, -43],
+    "Elevation": [70, 50, 20, 80]
+})
 
-signal = base_signal[satellite] + (elevation * 0.12)
+# Filter logic
+if satellite != "All Satellites":
+    data = data[data["Satellite"] == satellite]
 
-# KPI Section
-col1, col2, col3 = st.columns(3)
+# Tabs
+tab1, tab2 = st.tabs(["📊 Overview", "📈 Analysis"])
 
-col1.metric("Signal Strength", f"{signal:.2f} dBm")
-col2.metric("Elevation", f"{elevation}°")
-col3.metric("Satellite", satellite)
+# ---------------- OVERVIEW ----------------
+with tab1:
 
-# Graph
-st.markdown("## 📈 Signal Analysis")
+    st.subheader("Overview Metrics")
 
-angles = np.linspace(0, 90, 100)
-signals = base_signal[satellite] + (angles * 0.12)
+    avg_signal = data["Signal"].mean()
+    best_signal = data["Signal"].max()
+    worst_signal = data["Signal"].min()
+    total_sat = len(data)
 
-fig, ax = plt.subplots()
-ax.plot(angles, signals)
-ax.set_xlabel("Elevation Angle")
-ax.set_ylabel("Signal Strength (dBm)")
-ax.set_title(f"{satellite} Signal Behavior")
+    col1, col2, col3, col4 = st.columns(4)
 
-st.pyplot(fig)
+    col1.metric("Avg Signal Strength", f"{avg_signal:.2f} dBm")
+    col2.metric("Best Signal", f"{best_signal} dBm")
+    col3.metric("Worst Signal", f"{worst_signal} dBm")
+    col4.metric("Total Satellites", total_sat)
 
-# Insights
-st.markdown("## 🔍 Insights")
+# ---------------- ANALYSIS ----------------
+with tab2:
 
-if elevation > 60:
-    st.success("High elevation → Optimal signal performance")
-elif elevation > 20:
-    st.warning("Moderate elevation → Stable signal range")
-else:
-    st.error("Low elevation → Weak signal expected")
+    st.subheader("Signal Analysis")
 
-# Footer
-st.markdown("---")
-st.markdown("Built by Ayushman Prakhar | ML-Based Satellite Analysis")
+    fig, ax = plt.subplots()
+    ax.scatter(data["Elevation"], data["Signal"])
+
+    ax.set_xlabel("Elevation Angle")
+    ax.set_ylabel("Signal Strength (dBm)")
+    ax.set_title("Elevation vs Signal Strength")
+
+    st.pyplot(fig)
