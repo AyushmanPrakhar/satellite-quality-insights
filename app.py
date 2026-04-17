@@ -1,32 +1,37 @@
 import streamlit as st
+import joblib
+import numpy as np
+import matplotlib.pyplot as plt
 
-# Page config
-st.set_page_config(page_title="Satellite Signal Dashboard", layout="wide")
+# Load trained model
+model = joblib.load("model.pkl")
 
-# Title
+st.set_page_config(page_title="Satellite Dashboard", layout="wide")
+
 st.title("🛰️ Satellite Signal Performance Analysis Dashboard")
 
-# 🔥 Show dashboard immediately (best UX)
-st.components.v1.iframe(
-    "https://satellite-quality-insights--ayushmanprakhar.replit.app/",
-    height=750,
-    scrolling=True
-)
+st.markdown("### 🚀 ML-Based Satellite Communication Monitoring System")
 
-# Description (after preview)
-st.markdown("### 🚀 Live ML-Based Satellite Communication Monitoring System")
+# Input
+elevation = st.slider("Elevation Angle (°)", 0, 90, 45)
 
-st.markdown(
-    "This dashboard provides real-time insights into satellite signal performance, "
-    "including signal strength, elevation impact, and communication quality analysis."
-)
+# ML Prediction
+prediction = model.predict([[elevation]])[0]
 
-# Button (fallback + full view)
-st.link_button(
-    "🔗 Open Full App in New Tab",
-    "https://satellite-quality-insights--ayushmanprakhar.replit.app/"
-)
+# Display
+st.metric("Predicted Signal Strength", f"{prediction:.2f} dBm")
 
-# Footer
+# Graph
+angles = np.linspace(0, 90, 100)
+predictions = model.predict(angles.reshape(-1, 1))
+
+fig, ax = plt.subplots()
+ax.plot(angles, predictions)
+ax.set_xlabel("Elevation Angle")
+ax.set_ylabel("Signal Strength (dBm)")
+ax.set_title("ML-Based Signal Behavior")
+
+st.pyplot(fig)
+
 st.markdown("---")
 st.markdown("Built by Ayushman Prakhar | ML-Based Satellite Analysis")
