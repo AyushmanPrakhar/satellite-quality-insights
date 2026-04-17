@@ -1,111 +1,174 @@
 import streamlit as st
 import pandas as pd
+import numpy as np
 import plotly.express as px
+import plotly.graph_objects as go
 
+# Page config
 st.set_page_config(page_title="Satellite Dashboard", layout="wide")
 
-# ---- Load Data ----
-df1 = pd.read_csv("signal-strength.csv")
-df2 = pd.read_csv("elevation-analysis.csv")
-data = pd.concat([df1, df2], ignore_index=True)
+# -----------------------------
+# 📊 DATA (Your 30 Satellites)
+# -----------------------------
+data = pd.DataFrame({
+    "name": [
+        "NOAA-18","NOAA-19","METEOR-M2","METEOR-M2-2","ISS","FUNCUBE-1",
+        "LILACSAT-2","CAS-4A","CAS-4B","PEGASUS","NEXUS","VYSAT",
+        "LUCKY-7","DELFIN-C3","UVSQ-SAT","ALTO-1","FOX-1B","FOX-1D",
+        "GOMX-1","STRAND-1","DUCHIFAT-1","LAPAN-A2","NUSAT-1",
+        "SPROUT","CUTE-1.7+APDII","SWISSCUBE","ATMCUBE-1","BEESAT-9",
+        "TEVEL-2","PLANETUM-1"
+    ],
+    "signal": [
+        -42,-44,-41,-43,-40,-45,
+        -46,-48,-47,-49,-44,-42,
+        -50,-41,-43,-45,-46,-47,
+        -48,-49,-50,-42,-43,
+        -55,-56,-54,-53,-57,
+        -59,-52
+    ],
+    "successRate": [
+        92,90,85,88,95,76,
+        74,87,85,70,92,80,
+        65,94,89,78,93,90,
+        69,63,62,95,87,
+        61,75,79,93,90,
+        58,94
+    ]
+})
 
-# ---- Sidebar ----
-st.sidebar.title("⚙️ Filters")
+# Remove duplicates (safety)
+data = data.drop_duplicates(subset=["name"])
 
-satellite = st.sidebar.selectbox(
-    "Satellite",
-    ["All"] + list(data["name"].unique())
+# -----------------------------
+# 🎯 STATUS CLASSIFICATION
+# -----------------------------
+def classify(signal):
+    if signal >= -45:
+        return "Strong"
+    elif signal >= -50:
+        return "Moderate"
+    else:
+        return "Weak"
+
+data["status"] = data["signal"].apply(classify)
+
+# -----------------------------
+# 🎛 FILTERS
+# -----------------------------
+st.sidebar.header("🔧 Filters")
+
+selected_status = st.sidebar.selectbox(
+    "Filter by Status",
+    ["All", "Strong", "Moderate", "Weak"]
 )
 
-status = st.sidebar.selectbox(
-    "Status",
-    ["All", "strong", "moderate", "weak"]
-)
+if selected_status != "All":
+    filtered = data[data["status"] == selected_status]
+else:
+    filtered = data.copy()
 
-filtered = data.copy()
+# -----------------------------
+# 🧾 TITLE
+# -----------------------------
+st.title("🛰 Satellite Signal Performance Analysis Dashboard")
+st.markdown("🚀 ML-Based Satellite Communication Monitoring System")
 
-if satellite != "All":
-    filtered = filtered[filtered["name"] == satellite]
-
-if status != "All":
-    filtered = filtered[filtered["status"] == status]
-
-# ---- Title ----
-st.title("🛰️ Satellite Signal Performance Dashboard")
-st.markdown("### 📡 Interactive Monitoring System")
-
-# ---- KPI CARDS ----
+# -----------------------------
+# 📊 KPIs
+# -----------------------------
 col1, col2, col3, col4 = st.columns(4)
 
-col1.metric("Avg Signal", f"{filtered['signalStrength'].mean():.2f}")
-col2.metric("Best Signal", f"{filtered['signalStrength'].max():.2f}")
-col3.metric("Worst Signal", f"{filtered['signalStrength'].min():.2f}")
-col4.metric("Satellites", len(filtered))
+col1.metric("Avg Signal", round(filtered["signal"].mean(), 2))
+col2.metric("Best Signal", filtered["signal"].max())
+col3.metric("Worst Signal", filtered["signal"].min())
+col4.metric("Satellites", filtered["name"].nunique())  # ✅ FIXED COUNT
 
-# ---- TABS ----
-tab1, tab2 = st.tabs(["📊 Overview", "📈 Analysis"])
+# -----------------------------
+# 📊 SIGNAL STRENGTH BAR CHART
+# -----------------------------
+st.markdown("## 📊 Signal Strength Overview")
 
-# ================= TAB 1 =================
-with tab1:
+color_map = {
+    "Strong": "green",
+    "Moderate": "orange",
+    "Weak": "red"
+}
 
-    st.markdown("## 📊 Signal Strength Overview")
+fig_bar = px.bar(
+    filtered,
+    x="name",
+    y="signal",
+    color="status",
+    color_discrete_map=color_map,
+    title="Signal Strength by Satellite"
+)
 
-    fig_bar = px.bar(
-        filtered,
-        x="name",
-        y="signalStrength",
-        color="status",
-        hover_data=["elevation", "successRate"],
-        color_discrete_map={
-            "strong": "green",
-            "moderate": "orange",
-            "weak": "red"
-        }
-    )
+fig_bar.update_layout(template="plotly_dark")
 
-    st.plotly_chart(fig_bar, use_container_width=True)
+st.plotly_chart(fig_bar, use_container_width=True)
 
-    st.markdown("## 📈 Success Rate")
+# -----------------------------
+# 📈 SUCCESS RATE GRAPH
+# -----------------------------
+st.markdown("## 📈 Success Rate Analysis")
 
-    fig_line = px.line(
-        filtered,
-        x="name",
-        y="successRate",
-        markers=True
-    )
+# Remove duplicates again (safety)
+unique_data = filtered.drop_duplicates(subset=["name"])
 
-    st.plotly_chart(fig_line, use_container_width=True)
+# Sort for better trend readability
+unique_data = unique_data.sort_values(by="successRate")
 
-# ================= TAB 2 =================
-with tab2:
+x = unique_data["name"]
+y = unique_data["successRate"]
 
-    st.markdown("## 🔍 Elevation vs Signal")
+# Trend line
+z = np.polyfit(range(len(y)), y, 1)
+trend = np.poly1d(z)
+trend_y = trend(range(len(y)))
 
-    fig_scatter = px.scatter(
-        filtered,
-        x="elevation",
-        y="signalStrength",
-        color="status",
-        size="successRate",
-        hover_data=["name"],
-        color_discrete_map={
-            "strong": "green",
-            "moderate": "orange",
-            "weak": "red"
-        }
-    )
+fig = go.Figure()
 
-    st.plotly_chart(fig_scatter, use_container_width=True)
+# Actual data
+fig.add_trace(go.Scatter(
+    x=x,
+    y=y,
+    mode="lines+markers",
+    name="Success Rate",
+    line=dict(color="#00BFFF", width=3),
+    marker=dict(size=6)
+))
 
-    # Insights
-    st.markdown("## 📌 Insights")
+# Trend line (CLEAR + LABELED)
+fig.add_trace(go.Scatter(
+    x=x,
+    y=trend_y,
+    mode="lines",
+    name="Trend Line (Overall Direction)",
+    line=dict(color="red", width=4, dash="dash")
+))
 
-    strong = filtered[filtered["status"] == "strong"]
-    weak = filtered[filtered["status"] == "weak"]
+fig.update_layout(
+    xaxis_title="Satellites (Sorted by Performance)",
+    yaxis_title="Success Rate (%)",
+    template="plotly_dark"
+)
 
-    st.write(f"🟢 Top Performers: {', '.join(strong['name'].head(3))}")
-    st.write(f"🔴 Weak Signals: {', '.join(weak['name'].head(3))}")
+st.plotly_chart(fig, use_container_width=True)
 
-# Footer
+# -----------------------------
+# 🧠 INSIGHTS SECTION
+# -----------------------------
+st.markdown("## 🧠 Insights")
+
+best_sat = filtered.loc[filtered["successRate"].idxmax()]["name"]
+worst_sat = filtered.loc[filtered["successRate"].idxmin()]["name"]
+
+st.info(f"🏆 Best Performing Satellite: {best_sat}")
+st.warning(f"⚠️ Worst Performing Satellite: {worst_sat}")
+
+# -----------------------------
+# 🧾 FOOTER
+# -----------------------------
 st.markdown("---")
-st.markdown("Built by Ayushman Prakhar | Interactive Satellite Dashboard")
+st.markdown("Built by Ayushman Prakhar | Satellite Analytics Dashboard")
