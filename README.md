@@ -1,4 +1,4 @@
-# 🚀 Satellite Signal Performance Analysis Dashboard  
+
 ### Machine Learning-Based Satellite Communication Monitoring & Signal Analysis System  
 
 📡 An ML-driven system for predictive satellite signal monitoring, performance analysis, and intelligent decision-making.
