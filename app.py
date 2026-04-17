@@ -11,9 +11,6 @@ st.set_page_config(page_title="Satellite Dashboard", layout="wide")
 # -----------------------------
 col1, col2 = st.columns([5,1])
 
-with col1:
-    st.title("🛰 Satellite Signal Performance Analysis Dashboard")
-    st.caption("🚀 ML-Based Satellite Communication Monitoring System")
 
 with col2:
     st.link_button(
