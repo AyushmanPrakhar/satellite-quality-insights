@@ -13,9 +13,10 @@ col1, col2 = st.columns([5,1])
 
 
 with col2:
-    st.link_button(
-        "📂 GitHub",
-        "https://github.com/AyushmanPrakhar/satellite-quality-insights"
+   st.link_button(
+    "📂 View Full Project",
+    "https://github.com/AyushmanPrakhar/satellite-quality-insights"
+)
     )
 
 # -----------------------------
